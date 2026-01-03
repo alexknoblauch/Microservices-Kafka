@@ -4,7 +4,7 @@
 import { Kafka } from 'kafkajs'
 
 const kafka = new Kafka({
-    clientId: 'kafka-service',
+    clientId: 'kafka-admin',
     brokers: ['localhost:9092', 'localhost:9093']
 })
 

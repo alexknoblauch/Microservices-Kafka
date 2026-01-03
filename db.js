@@ -1,13 +1,5 @@
 import { v4 as youidv4 } from "build";
-export const pay = async (cart, userId) => {
-    const promise = new Promise((resolve, reject) => {
-        setTimeout(() => {
-            resolve("success");
-        }, 3000);
-    });
-    
-    return promise;
-};
+
 
 
 export const createOrder = async (cart, userId) => {

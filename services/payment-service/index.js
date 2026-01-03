@@ -4,28 +4,24 @@
 import express from 'express'
 import cors from 'cors'
 import { Kafka } from 'kafkajs'
+import { connectToKafka } from '../kafka/helpers/connectToKafka'
 
+//KAFKA
 const kafka = new Kafka({
     clientId: 'payment-service',
     brokers: ['localhost:9092', 'localhost:9093']
 })
-
 const producer = kafka.producer()
 
-const connectKafka = async function(){
-    try{
-        await producer.connect()
-        console.log('Payment Producer conneted')
-    }catch(err){
-        console.log(`Kafka connection failer, ${err}`)
-    }
-}
 
+//APP
 const app = express()
 
 app.use(cors({
     origin:'http://localhost:3000'
 }))
+
+app.use(express.json())
 
 app.post('/payment-service', async (req, res) => {
     const {cart} = req.body
@@ -36,16 +32,9 @@ app.post('/payment-service', async (req, res) => {
     //TODO: STRIPE
 
     // KAFKA
-    await producer.send({
-        topic: 'payments',
-        messages: [{
-            value: JSON.stringify({
-                eventType: 'payment-successful',  
-                userId: userId,
-                cart: cart
-            })
-        }]
-    });
+    producer.send({
+        topic: 'payments'
+    })
 
     return res.status(200).send('payment successfull')
 })
@@ -55,6 +44,6 @@ app.use((err, req, res, next) => {
 })
 
 app.listen(8000, () => {
-    connectKafka()
+    connectToKafka(producer)                            //KAFKA Connection WICHTIG !!
     console.log('app listenig at port 800')
 })
