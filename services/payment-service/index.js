@@ -6,14 +6,16 @@ import cors from 'cors'
 import { Kafka } from 'kafkajs'
 import { connectToKafka } from '../kafka/helpers/connectToKafka'
 
+//
 //KAFKA
 const kafka = new Kafka({
     clientId: 'payment-service',
-    brokers: ['localhost:9092', 'localhost:9093']
+    brokers: ['localhost:9092']
 })
 const producer = kafka.producer()
 
 
+//
 //APP
 const app = express()
 
@@ -33,7 +35,10 @@ app.post('/payment-service', async (req, res) => {
 
     // KAFKA
     producer.send({
-        topic: 'payments'
+        topic: 'payments',                       // sends message to paymnets Topic in Kafka
+        messages: [
+            {value: JSON.stringify({ cart, userId })}
+        ]
     })
 
     return res.status(200).send('payment successfull')

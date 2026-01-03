@@ -12,7 +12,6 @@ const producer = kafka.producer()
 const consumer = kafka.consumer({groupId: 'order-service' })
 
 const run = async function() {
-
     try{
         await producer.connect()
         await consumer.connect()
@@ -27,12 +26,12 @@ const run = async function() {
                 const { userId, cart } = JSON.parse(value)
 
             //TODO: Create a new Order in DB
-            const orderNumber = '1223434345'
+            const orderId = '1223434345'
 
             await producer.send({
                 topic: 'orders',
                 messages: [
-                    { value: JSON.stringify(userId, orderNumber)}
+                    { value: JSON.stringify(userId, orderId)}
                 ]
             })
 
