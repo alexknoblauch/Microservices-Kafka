@@ -28,7 +28,7 @@ const run = async function() {
             eachMessage: async({topic, partition, message}) => {
                 try {
                     const value = message.value.toString()
-                    const { userId, cart, paymentId } = JSON.parse(value)
+                    const { userId, cart, paymentId } = JSON.parse(value)           // paymentId von message.value !!
                     logger.info('Payment event received', {
                         topic,
                         partition,

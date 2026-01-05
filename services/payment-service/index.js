@@ -15,26 +15,26 @@ import logger from '../../lib/winston';
 const kafka = new Kafka({
     clientId: 'payment-service',
     brokers: ['localhost:9092']
-})
-const producer = kafka.producer()
+});
+const producer = kafka.producer();
 
 
 //
 //APP
-const app = express()
+const app = express();
 
 app.use(cors({
     origin:'http://localhost:3000'
-}))
+}));
 
-app.use(express.json())
+app.use(express.json());
 
 app.post('/payment-service', async (req, res) => {
-    const {cart} = req.body
+    const {cart} = req.body;
     // ASSUME THAT WE GET THE COOKIE AND BCRYPTED USERID
 
-    const userId = '123'
-    const paymentId = uuidv4()
+    const userId = '123';
+    const paymentId = uuidv4();
 
     //TODO: STRIPE
 
@@ -47,8 +47,9 @@ app.post('/payment-service', async (req, res) => {
                     {value: JSON.stringify({ cart, userId, paymentId })}
                 ]
             })
-        }, 3)
-        return res.status(200).send('payment successfull')
+        }, 3);
+        logger.info('Producer successfull');
+        return res.status(200).send('Payment successfull');
 
     } catch(err){
         logger.error('Payment Producer failed', {
@@ -56,7 +57,7 @@ app.post('/payment-service', async (req, res) => {
             cart, 
             userId, 
             paymentId
-        })
+        });
 
         return res.status(500).json({
             success: false,
@@ -64,15 +65,15 @@ app.post('/payment-service', async (req, res) => {
             message: 'Payment could not be processed. Please try again.',
             paymentId: paymentId,                 
             timestamp: new Date().toISOString()
-        })
+        });
     }
-})
+});
 
 app.use((err, req, res, next) => {
-    res.status(err.status || 500).send(err.message)
-})
+    res.status(err.status || 500).send(err.message);
+});
 
 app.listen(8000, () => {
-    connectToKafka(producer)                            //KAFKA Connection WICHTIG !!
-    console.log('app listenig at port 800')
-})
+    connectToKafka(producer);                            //KAFKA Connection WICHTIG !!
+    console.log('app listenig at port 800');
+});
