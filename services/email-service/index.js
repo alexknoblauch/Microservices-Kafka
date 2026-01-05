@@ -28,16 +28,14 @@ const run = async function() {
             //TODO: Send email to User
             const emailId = '1223434345'
 
-            await producer.send({
-                topic: 'emails',
-                messages: [
-                    { value: JSON.stringify(userId, emailId)}
-                ]
-            })
-
-            }
-
+        await producer.send({
+            topic: 'emails',
+            messages: [
+                { value: JSON.stringify(userId, emailId)}
+            ]
         })
+        }
+    })
     } catch(err){
         console.log(`Consumer analytic connection failed, ${err}`)
     }

@@ -3,6 +3,8 @@
  */
 import { Kafka } from 'kafkajs'
 import { redisClient } from '../../lib/redis'
+import logger from '../../lib/winston'
+import { withRetry } from '../../helpers/withRetry'
 
 const kafka = new Kafka({
     clientId: 'order-service',
@@ -16,6 +18,7 @@ const run = async function() {
     try{
         await producer.connect()
         await consumer.connect()
+        await redisClient.connect()     // jeder microservice NEU connecten
         await consumer.subscribe({
             topic: 'payments',
             fromBeginning: true         //in dev true in prod false !!
@@ -23,32 +26,71 @@ const run = async function() {
 
         await consumer.run({
             eachMessage: async({topic, partition, message}) => {
-                const value = message.value.toString()
-                const { userId, cart } = JSON.parse(value)
+                try {
+                    const value = message.value.toString()
+                    const { userId, cart, paymentId } = JSON.parse(value)
+                    logger.info('Payment event received', {
+                        topic,
+                        partition,
+                        userId,
+                        timestamp: new Date().toISOString()
+                    });
 
-            //TODO: Create a new Order in DB
-            const orderId = '1223434345'
 
-            await producer.send({
-                topic: 'orders',
-                messages: [
-                    { value: JSON.stringify(userId, orderId)}
-                ]
-            })
+                    // GUARD CLAUSE FÜR PAYMENT ORDER ID (für keiene 2 order indemopency)
+                    const existingOrderId = await redisClient.get(`payment:${paymentId}:order`);
+                    if (existingOrderId) {
+                        logger.info('Payment already processed - order exists', {
+                            paymentId,
+                            existingOrderId,
+                            userId,
+                            offset: message.offset
+                        });
+                        return; 
+                    }
 
-            await redisClient.setEx(
-                    `order:${orderId}:status`,
-                    7 * 24 * 60 * 60, // 7 Tage TTL
-                    'processing'
-                )
 
+                    //FAKE ORDER ID
+                    const orderId = '1223434345' 
+                    logger.info('OrderId created', {orderId})
+                    await redisClient.setEx(`payment:${paymentId}:order`, 86400, orderId);
+
+
+                    await withRetry(async () => {
+                        await redisClient.setEx(
+                                `order:${orderId}:status`,
+                                7 * 24 * 60 * 60, // 7 Tage TTL
+                                'processing'
+                            );
+                        logger.info('Reis orderId set', {orderId})
+                    }, 3)
+
+
+                    
+                    await withRetry(async () => {
+                        await producer.send({
+                            topic: 'orders',
+                            messages: [
+                                { value: JSON.stringify({ userId, orderId })}
+                            ]
+                        });
+                        logger.info('Producer sent orders topic')
+                    }, 3)
+
+                } catch (err) {
+                    logger.error('Orderservice went wrong', {
+                        error: err.message,    
+                        stack: err.stack,      
+                        topic,
+                        partition,
+                        offset: message.offset 
+                    })
             }
-
-        })
+        }})
+        
     } catch(err){
         console.log(`Consumer analytic connection failed, ${err}`)
     }
-     
 }
 run()
 
