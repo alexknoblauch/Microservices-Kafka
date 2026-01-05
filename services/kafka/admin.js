@@ -18,7 +18,7 @@ async function createTopicsFromList(topicNames) {
     await admin.createTopics({
         topics: topicNames.map(topicName => ({
             topic: topicName,
-            numPartitions: 1,
+            numPartitions: 3,
             replicationFactor: 1
         }))
     })

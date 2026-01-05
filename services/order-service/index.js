@@ -2,6 +2,7 @@
  * Node Modules
  */
 import { Kafka } from 'kafkajs'
+import { redisClient } from '../../lib/redis'
 
 const kafka = new Kafka({
     clientId: 'order-service',
@@ -34,6 +35,12 @@ const run = async function() {
                     { value: JSON.stringify(userId, orderId)}
                 ]
             })
+
+            await redisClient.setEx(
+                    `order:${orderId}:status`,
+                    7 * 24 * 60 * 60, // 7 Tage TTL
+                    'processing'
+                )
 
             }
 
